@@ -29,7 +29,7 @@ jobs:
 
       - name: Use compile-focused release entrypoint
         run: |
-          cp lib/release_main.dart lib/main.dart
+          sed 's/body: const Bg(/body: Bg(/' lib/release_main.dart > lib/main.dart
           rm -rf test
 
       - name: Get dependencies
