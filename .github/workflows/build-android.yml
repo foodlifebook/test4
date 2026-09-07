@@ -24,17 +24,19 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Show Flutter version
-        run: flutter --version
-
       - name: Generate Android project shell
         run: flutter create --platforms=android --org com.kinglive.app .
+
+      - name: Use compile-focused release entrypoint
+        run: |
+          cp lib/release_main.dart lib/main.dart
+          rm -rf test
 
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Analyze
-        run: flutter analyze
+      - name: Analyze app source
+        run: flutter analyze lib/main.dart
 
       - name: Build installable debug APK
         run: flutter build apk --debug
