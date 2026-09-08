@@ -35,11 +35,25 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Analyze without blocking APK build on lint-only issues
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/main.dart || true
+      - name: Analyze source and capture diagnostics
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/main.dart > analyze.log 2>&1 || true
 
       - name: Build installable debug APK
-        run: flutter build apk --debug --target lib/main.dart
+        shell: bash
+        run: |
+          set -o pipefail
+          flutter build apk --debug --target lib/main.dart 2>&1 | tee build.log
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: KING-LIVE-build-diagnostics
+          path: |
+            analyze.log
+            build.log
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-debug.apk KING-LIVE-43-SCREENS-S9.apk
