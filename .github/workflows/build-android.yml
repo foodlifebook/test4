@@ -24,8 +24,8 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate Android project shell
-        run: flutter create --platforms=android --org com.kinglive.app .
+      - name: Generate Android project shell with unique install ID
+        run: flutter create --platforms=android --org com.kinglive.s9fix .
 
       - name: Prepare full 43-screen entrypoint
         shell: bash
@@ -58,36 +58,47 @@ jobs:
           PY
           rm -rf test
 
+      - name: Force Samsung S9 compatible minimum SDK
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android/app/build.gradle.kts')
+          s=p.read_text()
+          s=s.replace('minSdk = flutter.minSdkVersion','minSdk = 23')
+          p.write_text(s)
+          PY
+
       - name: Get dependencies
         run: flutter pub get
 
       - name: Analyze source and capture diagnostics
         run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/main.dart > analyze.log 2>&1 || true
 
-      - name: Build installable debug APK
+      - name: Build S9 arm64 release APK
         shell: bash
         run: |
           set -o pipefail
-          flutter build apk --debug --target lib/main.dart 2>&1 | tee build.log
+          flutter build apk --release --split-per-abi --target lib/main.dart 2>&1 | tee build.log
 
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: KING-LIVE-build-diagnostics
+          name: KING-LIVE-install-fix-diagnostics
           path: |
             analyze.log
             build.log
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Rename APK
-        run: cp build/app/outputs/flutter-apk/app-debug.apk KING-LIVE-43-SCREENS-S9.apk
+      - name: Rename Samsung S9 APK
+        run: cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk KING-LIVE-S9-INSTALL-FIX.apk
 
-      - name: Upload APK artifact
+      - name: Upload Samsung S9 APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: KING-LIVE-43-SCREENS-S9-APK
-          path: KING-LIVE-43-SCREENS-S9.apk
+          name: KING-LIVE-S9-INSTALL-FIX-APK
+          path: KING-LIVE-S9-INSTALL-FIX.apk
           if-no-files-found: error
           retention-days: 30
