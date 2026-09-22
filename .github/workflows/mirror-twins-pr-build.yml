@@ -18,9 +18,12 @@ jobs:
         with:
           gradle-version: '8.10.2'
       - name: Restore Android project
+        shell: bash
         run: |
-          base64 -d mirror-twins/android-project.zip.b64 > /tmp/android-project.zip
-          unzip -q /tmp/android-project.zip -d mirror-twins
+          cat mirror-twins/archive.part1 mirror-twins/archive.part2 mirror-twins/archive.part3 mirror-twins/archive.part4 > /tmp/mirror-twins.b64
+          base64 -d /tmp/mirror-twins.b64 > /tmp/mirror-twins.zip
+          unzip -t /tmp/mirror-twins.zip
+          unzip -q /tmp/mirror-twins.zip -d mirror-twins
       - name: Ensure Android SDK 35
         shell: bash
         run: |
@@ -28,9 +31,9 @@ jobs:
           yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
           "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
       - name: Build debug APK
-        run: cd mirror-twins/android && gradle assembleDebug --stacktrace
+        run: cd mirror-twins/mt_slim && gradle assembleDebug --stacktrace
       - name: Rename APK
-        run: cp mirror-twins/android/app/build/outputs/apk/debug/app-debug.apk MirrorTwins-0.5.0-debug.apk
+        run: cp mirror-twins/mt_slim/app/build/outputs/apk/debug/app-debug.apk MirrorTwins-0.5.0-debug.apk
       - uses: actions/upload-artifact@v4
         with:
           name: MirrorTwins-Android-0.5.0
