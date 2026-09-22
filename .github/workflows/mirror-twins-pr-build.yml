@@ -65,16 +65,11 @@ jobs:
                       s.setMediaPlaybackRequiresUserGesture(false);
                       webView.setWebViewClient(new WebViewClient());
                       webView.setWebChromeClient(new WebChromeClient());
-
-                      // Offline-first bootstrap: never require a VPS or working internet just to open the app.
-                      // Solo mode is fully bundled in the APK. The user can enter Network Arena from there.
                       webView.loadUrl("file:///android_asset/www/solo.html");
-
                       if (Build.VERSION.SDK_INT >= 33) {
                           requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
                       }
                   } catch (Throwable t) {
-                      // Avoid a silent close on unusual WebView/device configurations.
                       android.widget.TextView error = new android.widget.TextView(this);
                       error.setPadding(32, 32, 32, 32);
                       error.setText("Mirror Twins could not start its local game view.\n\n" + t.getClass().getSimpleName() + ": " + String.valueOf(t.getMessage()));
