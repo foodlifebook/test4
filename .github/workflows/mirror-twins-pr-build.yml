@@ -24,6 +24,13 @@ jobs:
           base64 -d /tmp/mirror-twins.b64 > /tmp/mirror-twins.zip
           unzip -t /tmp/mirror-twins.zip
           unzip -q /tmp/mirror-twins.zip -d mirror-twins
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('mirror-twins/mt_slim/app/src/main/AndroidManifest.xml')
+          s=p.read_text()
+          s=s.replace('android:label="Mirror Twins"\n        <activity', 'android:label="Mirror Twins">\n        <activity')
+          p.write_text(s)
+          PY
       - name: Ensure Android SDK 35
         shell: bash
         run: |
