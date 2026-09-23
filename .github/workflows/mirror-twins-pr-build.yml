@@ -1,4 +1,4 @@
-name: Mirror Twins Android Online APK
+name: Mirror Twins Android 1.2 APK
 on:
   pull_request:
     branches: [main]
