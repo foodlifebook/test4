@@ -79,11 +79,27 @@ public final class UpdateManager {
     }
 
     public String getAppVersionName() {
-        return BuildConfig.VERSION_NAME;
+        try {
+            String name = activity.getPackageManager()
+                    .getPackageInfo(activity.getPackageName(), 0).versionName;
+            return name == null ? "Unknown" : name;
+        } catch (Exception e) {
+            return "Unknown";
+        }
     }
 
     public int getAppVersionCode() {
-        return BuildConfig.VERSION_CODE;
+        try {
+            android.content.pm.PackageInfo info = activity.getPackageManager()
+                    .getPackageInfo(activity.getPackageName(), 0);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                long code = info.getLongVersionCode();
+                return code > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) code;
+            }
+            return info.versionCode;
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     public void checkForUpdates(boolean manual) {
@@ -127,7 +143,7 @@ public final class UpdateManager {
     private boolean isAppUpdateAvailable(JSONObject manifest, boolean manual) {
         if (manifest == null) return false;
         int code = manifest.optInt("versionCode", -1);
-        if (code <= BuildConfig.VERSION_CODE) return false;
+        if (code <= getAppVersionCode()) return false;
         return manual || code != prefs.getInt(KEY_SKIP_APP, -1);
     }
 
@@ -373,7 +389,7 @@ public final class UpdateManager {
             connection = (HttpURLConnection) url.openConnection();
             connection.setConnectTimeout(7000);
             connection.setReadTimeout(7000);
-            connection.setRequestProperty("User-Agent", "MirrorTwins-Android-Updater/" + BuildConfig.VERSION_NAME);
+            connection.setRequestProperty("User-Agent", "MirrorTwins-Android-Updater/" + getAppVersionName());
             connection.setUseCaches(false);
             int status = connection.getResponseCode();
             if (status < 200 || status >= 300) return null;
@@ -402,7 +418,7 @@ public final class UpdateManager {
             connection = (HttpURLConnection) url.openConnection();
             connection.setConnectTimeout(10000);
             connection.setReadTimeout(20000);
-            connection.setRequestProperty("User-Agent", "MirrorTwins-Android-Updater/" + BuildConfig.VERSION_NAME);
+            connection.setRequestProperty("User-Agent", "MirrorTwins-Android-Updater/" + getAppVersionName());
             connection.setInstanceFollowRedirects(true);
 
             int status = connection.getResponseCode();
