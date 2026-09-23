@@ -16,8 +16,12 @@ html = html.replace(
     '<div class="home-footer"><span>✓ Solo works without internet</span><span>Online connects securely when selected</span></div>'
 )
 html = html.replace(
+    '<button id="resetProgress" class="danger-btn">Reset Solo Progress</button>',
+    '<div class="update-box"><div><b>Updates</b><small id="updateVersionText">Game: bundled · App: current</small></div><button id="checkUpdatesBtn" class="secondary-btn" type="button">Check for Updates</button><small>Updates are always optional. You can keep using the current version.</small></div>\n      <button id="resetProgress" class="danger-btn">Reset Solo Progress</button>'
+)
+html = html.replace(
     'This Android test build is fully local. No account, VPS or internet connection is required.',
-    'Solo mode is stored on this device and works offline. Online Arena connects securely to mt.grafixers.co.uk.'
+    'Solo mode is stored on this device and works offline. Online Arena and optional updates use mt.grafixers.co.uk.'
 )
 html = html.replace('<script src="game.js"></script>', '<script src="game.js"></script>\n<script src="online.js"></script>')
 html_path.write_text(html, encoding="utf-8")
@@ -31,6 +35,11 @@ css += r'''
 .online-btn.connecting{opacity:.72}
 .online-status{margin:7px 3px 0!important;font-size:9px!important;color:#7f93b5!important}
 .online-status.warn{color:#ffb5a9!important}
+.update-box{margin-top:16px;padding:14px;border:1px solid rgba(87,196,255,.18);background:rgba(22,44,78,.34);border-radius:16px;text-align:left}
+.update-box b,.update-box small{display:block}
+.update-box>div>small{margin-top:4px;color:#94a8c9;font-size:10px}
+.update-box>.secondary-btn{margin-top:11px}
+.update-box>small{margin-top:8px;color:#7184a3;font-size:9px;line-height:1.45}
 '''
 css_path.write_text(css, encoding="utf-8")
 
