@@ -1,4 +1,4 @@
-name: Mirror Twins Android 1.2 APK
+name: Mirror Twins Updater Base APK
 on:
   pull_request:
     branches: [main]
@@ -21,7 +21,7 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Restore solo game and add online launcher
+      - name: Restore bundled game and updater UI
         shell: bash
         run: |
           set -euo pipefail
@@ -40,10 +40,17 @@ jobs:
           python3 mirror-twins-local/patch_online.py
           python3 mirror-twins-local/generate_assets.py
 
+          sed -i "s/versionCode 21/versionCode 30/" mirror-twins-local/app/build.gradle
+          sed -i "s/versionName '1.2.0-challenges'/versionName '2.0.0-updater-base'/" mirror-twins-local/app/build.gradle
+
           node --check mirror-twins-local/app/src/main/assets/www/game.js
           node --check mirror-twins-local/app/src/main/assets/www/online.js
           grep -F 'Online Arena' mirror-twins-local/app/src/main/assets/www/index.html
+          grep -F 'Check for Updates' mirror-twins-local/app/src/main/assets/www/index.html
+          grep -F 'NativeUpdater.checkForUpdates' mirror-twins-local/app/src/main/assets/www/online.js
           grep -F 'https://mt.grafixers.co.uk' mirror-twins-local/app/src/main/assets/www/online.js
+          grep -F 'GAME_MANIFEST = BASE_URL + "/updates/game.json"' mirror-twins-local/app/src/main/java/com/mirrortwins/game/UpdateManager.java
+          grep -F 'APP_MANIFEST = BASE_URL + "/updates/android.json"' mirror-twins-local/app/src/main/java/com/mirrortwins/game/UpdateManager.java
           test -s mirror-twins-local/app/src/main/assets/www/assets/splash.png
           test -s mirror-twins-local/app/src/main/assets/www/assets/audio/music.wav
           test -s mirror-twins-local/signing/mirrortwins-test.keystore
@@ -55,41 +62,44 @@ jobs:
           yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
           "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Build connected debug APK
+      - name: Build updater-enabled APK
         run: cd mirror-twins-local && gradle assembleDebug --stacktrace
 
-      - name: Validate connected APK
+      - name: Validate updater-enabled APK
         shell: bash
         run: |
           set -euo pipefail
           SRC="mirror-twins-local/app/build/outputs/apk/debug/app-debug.apk"
-          APK="MirrorTwins-Android-1.1.0-online-debug.apk"
+          APK="MirrorTwins-Android-2.0.0-updater-base-debug.apk"
           test -s "$SRC"
           cp "$SRC" "$APK"
 
           echo "=== PACKAGE ==="
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | head -20
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.mirrortwins.game'"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "versionCode='30'"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "versionName='2.0.0-updater-base'"
 
           echo "=== PERMISSIONS ==="
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump permissions "$APK"
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump permissions "$APK" | grep -F 'android.permission.INTERNET'
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump permissions "$APK" | grep -F 'android.permission.VIBRATE'
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump permissions "$APK" | grep -F 'android.permission.REQUEST_INSTALL_PACKAGES'
 
           echo "=== SIGNATURE ==="
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
 
-          echo "=== BUNDLED SOLO + ONLINE LAUNCHER ==="
+          echo "=== BUNDLED FALLBACK GAME ==="
           unzip -l "$APK" | grep -E 'assets/www/(index.html|game.js|online.js|styles.css|assets/splash.png|assets/audio/music.wav)'
-          unzip -p "$APK" assets/www/index.html | grep -F 'Online Arena'
-          unzip -p "$APK" assets/www/online.js | grep -F 'https://mt.grafixers.co.uk'
+          unzip -p "$APK" assets/www/index.html | grep -F 'Check for Updates'
+          unzip -p "$APK" assets/www/online.js | grep -F 'NativeUpdater.checkForUpdates'
 
           ls -lh "$APK"
           sha256sum "$APK"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: MirrorTwins-Android-1.1.0-online
-          path: MirrorTwins-Android-1.1.0-online-debug.apk
+          name: MirrorTwins-Android-2.0.0-updater-base
+          path: MirrorTwins-Android-2.0.0-updater-base-debug.apk
           if-no-files-found: error
           retention-days: 30
