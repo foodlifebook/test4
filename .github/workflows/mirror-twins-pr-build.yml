@@ -1,4 +1,4 @@
-name: Mirror Twins Local Android APK
+name: Mirror Twins Android Online APK
 on:
   pull_request:
     branches: [main]
@@ -21,11 +21,12 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Restore local game and generate bundled assets
+      - name: Restore solo game and add online launcher
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p mirror-twins-local/app/src/main/assets/www
+          mkdir -p mirror-twins-local/signing
 
           cat mirror-twins-local/web/index.part*.b64 > /tmp/index.b64
           cat mirror-twins-local/web/styles.part*.b64 > /tmp/styles.b64
@@ -34,12 +35,18 @@ jobs:
           base64 -d /tmp/index.b64 > mirror-twins-local/app/src/main/assets/www/index.html
           base64 -d /tmp/styles.b64 > mirror-twins-local/app/src/main/assets/www/styles.css
           base64 -d /tmp/game.b64 > mirror-twins-local/app/src/main/assets/www/game.js
+          base64 -d mirror-twins-local/signing/mirrortwins-test.keystore.b64 > mirror-twins-local/signing/mirrortwins-test.keystore
 
+          python3 mirror-twins-local/patch_online.py
           python3 mirror-twins-local/generate_assets.py
 
           node --check mirror-twins-local/app/src/main/assets/www/game.js
+          node --check mirror-twins-local/app/src/main/assets/www/online.js
+          grep -F 'Online Arena' mirror-twins-local/app/src/main/assets/www/index.html
+          grep -F 'https://mt.grafixers.co.uk' mirror-twins-local/app/src/main/assets/www/online.js
           test -s mirror-twins-local/app/src/main/assets/www/assets/splash.png
           test -s mirror-twins-local/app/src/main/assets/www/assets/audio/music.wav
+          test -s mirror-twins-local/signing/mirrortwins-test.keystore
 
       - name: Ensure Android SDK 35
         shell: bash
@@ -48,25 +55,41 @@ jobs:
           yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
           "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Build local debug APK
+      - name: Build connected debug APK
         run: cd mirror-twins-local && gradle assembleDebug --stacktrace
 
-      - name: Validate S9 test APK
+      - name: Validate connected APK
         shell: bash
         run: |
           set -euo pipefail
-          APK="mirror-twins-local/app/build/outputs/apk/debug/app-debug.apk"
-          test -s "$APK"
-          cp "$APK" MirrorTwins-Solo-1.0.1-S9-test-debug.apk
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging MirrorTwins-Solo-1.0.1-S9-test-debug.apk | head -20
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose MirrorTwins-Solo-1.0.1-S9-test-debug.apk
-          unzip -l MirrorTwins-Solo-1.0.1-S9-test-debug.apk | grep -E 'assets/www/(index.html|game.js|styles.css|assets/splash.png|assets/audio/music.wav)'
-          ls -lh MirrorTwins-Solo-1.0.1-S9-test-debug.apk
-          sha256sum MirrorTwins-Solo-1.0.1-S9-test-debug.apk
+          SRC="mirror-twins-local/app/build/outputs/apk/debug/app-debug.apk"
+          APK="MirrorTwins-Android-1.1.0-online-debug.apk"
+          test -s "$SRC"
+          cp "$SRC" "$APK"
+
+          echo "=== PACKAGE ==="
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | head -20
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.mirrortwins.game'"
+
+          echo "=== PERMISSIONS ==="
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump permissions "$APK"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump permissions "$APK" | grep -F 'android.permission.INTERNET'
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump permissions "$APK" | grep -F 'android.permission.VIBRATE'
+
+          echo "=== SIGNATURE ==="
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
+
+          echo "=== BUNDLED SOLO + ONLINE LAUNCHER ==="
+          unzip -l "$APK" | grep -E 'assets/www/(index.html|game.js|online.js|styles.css|assets/splash.png|assets/audio/music.wav)'
+          unzip -p "$APK" assets/www/index.html | grep -F 'Online Arena'
+          unzip -p "$APK" assets/www/online.js | grep -F 'https://mt.grafixers.co.uk'
+
+          ls -lh "$APK"
+          sha256sum "$APK"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: MirrorTwins-Solo-1.0.1-S9-test
-          path: MirrorTwins-Solo-1.0.1-S9-test-debug.apk
+          name: MirrorTwins-Android-1.1.0-online
+          path: MirrorTwins-Android-1.1.0-online-debug.apk
           if-no-files-found: error
           retention-days: 30
