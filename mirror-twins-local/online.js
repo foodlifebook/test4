@@ -1,5 +1,5 @@
 (()=>{
-// Mirror Twins Android permanent updater bridge
+// Mirror Twins Android permanent updater bridge v2
 'use strict';
 const SERVER='https://mt.grafixers.co.uk';
 
