@@ -37,17 +37,9 @@ jobs:
 
           python3 mirror-twins-local/generate_assets.py
 
-          test -s mirror-twins-local/app/src/main/assets/www/index.html
-          test -s mirror-twins-local/app/src/main/assets/www/styles.css
-          test -s mirror-twins-local/app/src/main/assets/www/game.js
-          test -s mirror-twins-local/app/src/main/assets/www/assets/splash.png
-          test -s mirror-twins-local/app/src/main/assets/www/assets/world_garden.png
-          test -s mirror-twins-local/app/src/main/assets/www/assets/audio/music.wav
-
           node --check mirror-twins-local/app/src/main/assets/www/game.js
-          echo "Bundled game assets:"
-          du -sh mirror-twins-local/app/src/main/assets
-          find mirror-twins-local/app/src/main/assets/www/assets -type f -maxdepth 2 -printf '%p %k KB\n' | sort
+          test -s mirror-twins-local/app/src/main/assets/www/assets/splash.png
+          test -s mirror-twins-local/app/src/main/assets/www/assets/audio/music.wav
 
       - name: Ensure Android SDK 35
         shell: bash
@@ -59,20 +51,22 @@ jobs:
       - name: Build local debug APK
         run: cd mirror-twins-local && gradle assembleDebug --stacktrace
 
-      - name: Validate and rename APK
+      - name: Validate S9 test APK
         shell: bash
         run: |
           set -euo pipefail
           APK="mirror-twins-local/app/build/outputs/apk/debug/app-debug.apk"
           test -s "$APK"
-          cp "$APK" MirrorTwins-Solo-1.0.0-local-debug.apk
-          ls -lh MirrorTwins-Solo-1.0.0-local-debug.apk
-          sha256sum MirrorTwins-Solo-1.0.0-local-debug.apk
-          unzip -l MirrorTwins-Solo-1.0.0-local-debug.apk | grep -E 'assets/www/(index.html|game.js|styles.css|assets/splash.png|assets/audio/music.wav)'
+          cp "$APK" MirrorTwins-Solo-1.0.1-S9-test-debug.apk
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging MirrorTwins-Solo-1.0.1-S9-test-debug.apk | head -20
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose MirrorTwins-Solo-1.0.1-S9-test-debug.apk
+          unzip -l MirrorTwins-Solo-1.0.1-S9-test-debug.apk | grep -E 'assets/www/(index.html|game.js|styles.css|assets/splash.png|assets/audio/music.wav)'
+          ls -lh MirrorTwins-Solo-1.0.1-S9-test-debug.apk
+          sha256sum MirrorTwins-Solo-1.0.1-S9-test-debug.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: MirrorTwins-Solo-1.0.0-local
-          path: MirrorTwins-Solo-1.0.0-local-debug.apk
+          name: MirrorTwins-Solo-1.0.1-S9-test
+          path: MirrorTwins-Solo-1.0.1-S9-test-debug.apk
           if-no-files-found: error
           retention-days: 30
