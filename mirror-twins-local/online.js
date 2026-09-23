@@ -1,4 +1,5 @@
 (()=>{
+// Mirror Twins Android 1.1.0 online bridge
 'use strict';
 const SERVER='https://mt.grafixers.co.uk';
 const button=document.getElementById('onlineBtn');
