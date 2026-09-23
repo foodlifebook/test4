@@ -5,10 +5,10 @@ android {
     compileSdk 35
 
     defaultConfig {
-        applicationId 'com.mirrortwins.game'
+        applicationId 'com.mirrortwins.solo.s9'
         minSdk 24
         targetSdk 35
-        versionCode 10
-        versionName '1.0.0-local'
+        versionCode 11
+        versionName '1.0.1-s9-test'
     }
 }
