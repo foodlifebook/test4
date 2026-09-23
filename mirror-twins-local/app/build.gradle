@@ -17,8 +17,8 @@ android {
         applicationId 'com.mirrortwins.game'
         minSdk 24
         targetSdk 35
-        versionCode 20
-        versionName '1.1.0-online'
+        versionCode 21
+        versionName '1.2.0-challenges'
     }
 
     buildTypes {
