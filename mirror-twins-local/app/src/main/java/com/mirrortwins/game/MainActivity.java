@@ -199,7 +199,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String getAppVersion() {
-            return updateManager == null ? BuildConfig.VERSION_NAME :
+            return updateManager == null ? "Unknown" :
                     updateManager.getAppVersionName();
         }
 
