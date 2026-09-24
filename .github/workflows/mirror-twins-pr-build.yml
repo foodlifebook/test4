@@ -99,6 +99,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: MirrorTwins-Android-2.1.0-voice-updater
-          path: MirrorTwins-Android-2.0.0-updater-base-debug.apk
+          path: MirrorTwins-Android-2.1.0-voice-updater-debug.apk
           if-no-files-found: error
           retention-days: 30
