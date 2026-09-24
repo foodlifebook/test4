@@ -1,4 +1,4 @@
-name: Mirror Twins Updater Base APK
+name: Mirror Twins Voice Updater APK
 on:
   pull_request:
     branches: [main]
@@ -40,9 +40,6 @@ jobs:
           python3 mirror-twins-local/patch_online.py
           python3 mirror-twins-local/generate_assets.py
 
-          sed -i "s/versionCode 21/versionCode 30/" mirror-twins-local/app/build.gradle
-          sed -i "s/versionName '1.2.0-challenges'/versionName '2.0.0-updater-base'/" mirror-twins-local/app/build.gradle
-
           node --check mirror-twins-local/app/src/main/assets/www/game.js
           node --check mirror-twins-local/app/src/main/assets/www/online.js
           grep -F 'Online Arena' mirror-twins-local/app/src/main/assets/www/index.html
@@ -70,21 +67,23 @@ jobs:
         run: |
           set -euo pipefail
           SRC="mirror-twins-local/app/build/outputs/apk/debug/app-debug.apk"
-          APK="MirrorTwins-Android-2.0.0-updater-base-debug.apk"
+          APK="MirrorTwins-Android-2.1.0-voice-updater-debug.apk"
           test -s "$SRC"
           cp "$SRC" "$APK"
 
           echo "=== PACKAGE ==="
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | head -20
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.mirrortwins.game'"
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "versionCode='30'"
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "versionName='2.0.0-updater-base'"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "versionCode='31'"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "versionName='2.1.0-voice-updater'"
 
           echo "=== PERMISSIONS ==="
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump permissions "$APK"
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump permissions "$APK" | grep -F 'android.permission.INTERNET'
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump permissions "$APK" | grep -F 'android.permission.VIBRATE'
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump permissions "$APK" | grep -F 'android.permission.REQUEST_INSTALL_PACKAGES'
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump permissions "$APK" | grep -F 'android.permission.RECORD_AUDIO'
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump permissions "$APK" | grep -F 'android.permission.MODIFY_AUDIO_SETTINGS'
 
           echo "=== SIGNATURE ==="
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
@@ -99,7 +98,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: MirrorTwins-Android-2.0.0-updater-base
+          name: MirrorTwins-Android-2.1.0-voice-updater
           path: MirrorTwins-Android-2.0.0-updater-base-debug.apk
           if-no-files-found: error
           retention-days: 30
