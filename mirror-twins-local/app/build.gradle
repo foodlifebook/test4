@@ -17,8 +17,8 @@ android {
         applicationId 'com.mirrortwins.game'
         minSdk 24
         targetSdk 35
-        versionCode 21
-        versionName '1.2.0-challenges'
+        versionCode 31
+        versionName '2.1.0-voice-updater'
     }
 
     buildTypes {
