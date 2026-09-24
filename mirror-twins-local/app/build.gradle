@@ -1,0 +1,29 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.mirrortwins.game'
+    compileSdk 35
+
+    signingConfigs {
+        mirrorTwinsTest {
+            storeFile file('../signing/mirrortwins-test.keystore')
+            storePassword 'MirrorTwinsTest2026'
+            keyAlias 'mirrortwins-test'
+            keyPassword 'MirrorTwinsTest2026'
+        }
+    }
+
+    defaultConfig {
+        applicationId 'com.mirrortwins.game'
+        minSdk 24
+        targetSdk 35
+        versionCode 34
+        versionName '2.4.0-mic-lifecycle'
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.mirrorTwinsTest
+        }
+    }
+}
