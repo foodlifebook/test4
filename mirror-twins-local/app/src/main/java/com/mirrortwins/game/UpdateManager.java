@@ -42,6 +42,11 @@ public final class UpdateManager {
     private final Runnable reloadGame;
     private final SharedPreferences prefs;
     private File pendingApk;
+    private volatile boolean updateStatusChecked = false;
+    private volatile boolean gameUpdateAvailable = false;
+    private volatile boolean appUpdateAvailable = false;
+    private volatile String remoteGameVersion = "";
+    private volatile String remoteAppVersion = "";
 
     public UpdateManager(Activity activity, Runnable reloadGame) {
         this.activity = activity;
@@ -110,7 +115,18 @@ public final class UpdateManager {
         new Thread(() -> {
             JSONObject game = fetchJson(GAME_MANIFEST);
             JSONObject app = fetchJson(APP_MANIFEST);
-            activity.runOnUiThread(() -> handleUpdateCheck(game, app, manual));
+
+            gameUpdateAvailable = isGameNewer(game);
+            appUpdateAvailable = isAppNewer(app);
+            remoteGameVersion = game == null ? "" : game.optString("versionName", "");
+            remoteAppVersion = app == null ? "" : app.optString("versionName", "");
+            updateStatusChecked = true;
+
+            activity.runOnUiThread(() -> {
+                if (manual) {
+                    handleUpdateCheck(game, app, true);
+                }
+            });
         }, "MirrorTwins-UpdateCheck").start();
     }
 
@@ -133,18 +149,40 @@ public final class UpdateManager {
         }
     }
 
-    private boolean isGameUpdateAvailable(JSONObject manifest, boolean manual) {
+    private boolean isGameNewer(JSONObject manifest) {
         if (manifest == null) return false;
+        return manifest.optInt("versionCode", -1) > getGameVersionCode();
+    }
+
+    private boolean isAppNewer(JSONObject manifest) {
+        if (manifest == null) return false;
+        return manifest.optInt("versionCode", -1) > getAppVersionCode();
+    }
+
+    private boolean isGameUpdateAvailable(JSONObject manifest, boolean manual) {
+        if (!isGameNewer(manifest)) return false;
         int code = manifest.optInt("versionCode", -1);
-        if (code <= getGameVersionCode()) return false;
         return manual || code != prefs.getInt(KEY_SKIP_GAME, -1);
     }
 
     private boolean isAppUpdateAvailable(JSONObject manifest, boolean manual) {
-        if (manifest == null) return false;
+        if (!isAppNewer(manifest)) return false;
         int code = manifest.optInt("versionCode", -1);
-        if (code <= getAppVersionCode()) return false;
         return manual || code != prefs.getInt(KEY_SKIP_APP, -1);
+    }
+
+    public String getUpdateStatusJson() {
+        JSONObject out = new JSONObject();
+        try {
+            out.put("checked", updateStatusChecked);
+            out.put("game", gameUpdateAvailable);
+            out.put("app", appUpdateAvailable);
+            out.put("available", gameUpdateAvailable || appUpdateAvailable);
+            out.put("remoteGameVersion", remoteGameVersion);
+            out.put("remoteAppVersion", remoteAppVersion);
+        } catch (Exception ignored) {
+        }
+        return out.toString();
     }
 
     private void showGameUpdateDialog(JSONObject manifest, JSONObject appManifest, boolean manual) {
@@ -217,6 +255,7 @@ public final class UpdateManager {
 
                 activity.runOnUiThread(() -> {
                     progress.dismiss();
+                    gameUpdateAvailable = false;
                     Toast.makeText(activity, "Game update installed.", Toast.LENGTH_LONG).show();
                     reloadGame.run();
                 });
