@@ -161,20 +161,33 @@ public class MainActivity extends Activity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode != AUDIO_PERMISSION_REQUEST) return;
 
-        PermissionRequest request = pendingAudioPermissionRequest;
-        pendingAudioPermissionRequest = null;
-        if (request == null) return;
-
         boolean granted = grantResults.length > 0 &&
                 grantResults[0] == PackageManager.PERMISSION_GRANTED;
-        if (granted) {
-            request.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
-        } else {
-            request.deny();
+
+        PermissionRequest request = pendingAudioPermissionRequest;
+        pendingAudioPermissionRequest = null;
+        if (request != null) {
+            if (granted) {
+                request.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+            } else {
+                request.deny();
+            }
+        }
+
+        dispatchMicPermission(granted);
+
+        if (!granted) {
             Toast.makeText(this,
-                    "Microphone stays off. Voice chat is optional.",
+                    "Microphone stays off. Tap the mic icon to try again.",
                     Toast.LENGTH_LONG).show();
         }
+    }
+
+    private void dispatchMicPermission(boolean granted) {
+        if (webView == null) return;
+        String js = "window.dispatchEvent(new CustomEvent('mirrorTwinsMicPermission',{detail:{granted:" +
+                (granted ? "true" : "false") + "}}));";
+        webView.evaluateJavascript(js, null);
     }
 
     private void loadGame(boolean onlineUnavailable) {
@@ -281,6 +294,27 @@ public class MainActivity extends Activity {
             return updateManager == null
                     ? "{\"checked\":false,\"available\":false}"
                     : updateManager.getUpdateStatusJson();
+        }
+
+        @JavascriptInterface
+        public boolean hasMicrophonePermission() {
+            return checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
+                    PackageManager.PERMISSION_GRANTED;
+        }
+
+        @JavascriptInterface
+        public void requestMicrophonePermission() {
+            runOnUiThread(() -> {
+                if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
+                        PackageManager.PERMISSION_GRANTED) {
+                    dispatchMicPermission(true);
+                    return;
+                }
+                requestPermissions(
+                        new String[]{Manifest.permission.RECORD_AUDIO},
+                        AUDIO_PERMISSION_REQUEST
+                );
+            });
         }
 
         @JavascriptInterface
