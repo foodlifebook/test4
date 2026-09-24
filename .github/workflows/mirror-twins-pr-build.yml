@@ -1,4 +1,4 @@
-name: Mirror Twins Voice Updater APK
+name: Mirror Twins Mic Permission Fix APK
 on:
   pull_request:
     branches: [main]
@@ -67,15 +67,15 @@ jobs:
         run: |
           set -euo pipefail
           SRC="mirror-twins-local/app/build/outputs/apk/debug/app-debug.apk"
-          APK="MirrorTwins-Android-2.1.0-voice-updater-debug.apk"
+          APK="MirrorTwins-Android-2.2.0-mic-permission-fix-debug.apk"
           test -s "$SRC"
           cp "$SRC" "$APK"
 
           echo "=== PACKAGE ==="
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | head -20
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.mirrortwins.game'"
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "versionCode='31'"
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "versionName='2.1.0-voice-updater'"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "versionCode='32'"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "versionName='2.2.0-mic-permission-fix'"
 
           echo "=== PERMISSIONS ==="
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump permissions "$APK"
@@ -98,7 +98,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: MirrorTwins-Android-2.1.0-voice-updater
-          path: MirrorTwins-Android-2.1.0-voice-updater-debug.apk
+          name: MirrorTwins-Android-2.2.0-mic-permission-fix
+          path: MirrorTwins-Android-2.2.0-mic-permission-fix-debug.apk
           if-no-files-found: error
           retention-days: 30
