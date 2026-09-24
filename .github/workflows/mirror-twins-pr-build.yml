@@ -1,4 +1,4 @@
-name: Mirror Twins Mic Permission Fix APK
+name: Mirror Twins Voice Diagnostics APK
 on:
   pull_request:
     branches: [main]
@@ -40,6 +40,9 @@ jobs:
           python3 mirror-twins-local/patch_online.py
           python3 mirror-twins-local/generate_assets.py
 
+          sed -i "s/versionCode 32/versionCode 33/" mirror-twins-local/app/build.gradle
+          sed -i "s/versionName '2.2.0-mic-permission-fix'/versionName '2.3.0-voice-diagnostics'/" mirror-twins-local/app/build.gradle
+
           node --check mirror-twins-local/app/src/main/assets/www/game.js
           node --check mirror-twins-local/app/src/main/assets/www/online.js
           grep -F 'Online Arena' mirror-twins-local/app/src/main/assets/www/index.html
@@ -67,15 +70,15 @@ jobs:
         run: |
           set -euo pipefail
           SRC="mirror-twins-local/app/build/outputs/apk/debug/app-debug.apk"
-          APK="MirrorTwins-Android-2.2.0-mic-permission-fix-debug.apk"
+          APK="MirrorTwins-Android-2.3.0-voice-diagnostics-debug.apk"
           test -s "$SRC"
           cp "$SRC" "$APK"
 
           echo "=== PACKAGE ==="
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | head -20
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.mirrortwins.game'"
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "versionCode='32'"
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "versionName='2.2.0-mic-permission-fix'"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "versionCode='33'"
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$APK" | grep -F "versionName='2.3.0-voice-diagnostics'"
 
           echo "=== PERMISSIONS ==="
           "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump permissions "$APK"
@@ -98,7 +101,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: MirrorTwins-Android-2.2.0-mic-permission-fix
-          path: MirrorTwins-Android-2.2.0-mic-permission-fix-debug.apk
+          name: MirrorTwins-Android-2.3.0-voice-diagnostics
+          path: MirrorTwins-Android-2.3.0-voice-diagnostics-debug.apk
           if-no-files-found: error
           retention-days: 30
