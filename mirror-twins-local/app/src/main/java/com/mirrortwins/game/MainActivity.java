@@ -1,12 +1,15 @@
 package com.mirrortwins.game;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
 import android.webkit.JavascriptInterface;
+import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -22,11 +25,13 @@ public class MainActivity extends Activity {
     private static final String ONLINE_HOST = "mt.grafixers.co.uk";
     private static final String STORAGE_PREFS = "mirror_twins_updater";
     private static final String STORAGE_KEY = "web_storage_json";
+    private static final int AUDIO_PERMISSION_REQUEST = 4201;
 
     private WebView webView;
     private UpdateManager updateManager;
     private boolean returningToLocal = false;
     private boolean autoCheckStarted = false;
+    private PermissionRequest pendingAudioPermissionRequest;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -96,17 +101,79 @@ public class MainActivity extends Activity {
                 }
             });
 
-            webView.setWebChromeClient(new WebChromeClient());
+            webView.setWebChromeClient(new WebChromeClient() {
+                @Override
+                public void onPermissionRequest(PermissionRequest request) {
+                    runOnUiThread(() -> handleWebPermissionRequest(request));
+                }
+
+                @Override
+                public void onPermissionRequestCanceled(PermissionRequest request) {
+                    if (pendingAudioPermissionRequest == request) {
+                        pendingAudioPermissionRequest = null;
+                    }
+                }
+            });
+
             loadGame(false);
 
             if (!autoCheckStarted) {
                 autoCheckStarted = true;
                 webView.postDelayed(() -> {
                     if (updateManager != null) updateManager.checkForUpdates(false);
-                }, 1800);
+                }, 1200);
             }
         } catch (Throwable t) {
             showStartupError(t);
+        }
+    }
+
+    private void handleWebPermissionRequest(PermissionRequest request) {
+        if (request == null) return;
+        Uri origin = request.getOrigin();
+        boolean trusted = origin != null &&
+                "https".equalsIgnoreCase(origin.getScheme()) &&
+                ONLINE_HOST.equalsIgnoreCase(origin.getHost());
+        boolean wantsAudio = false;
+        for (String resource : request.getResources()) {
+            if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resource)) {
+                wantsAudio = true;
+                break;
+            }
+        }
+
+        if (!trusted || !wantsAudio) {
+            request.deny();
+            return;
+        }
+
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            request.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+            return;
+        }
+
+        pendingAudioPermissionRequest = request;
+        requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, AUDIO_PERMISSION_REQUEST);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != AUDIO_PERMISSION_REQUEST) return;
+
+        PermissionRequest request = pendingAudioPermissionRequest;
+        pendingAudioPermissionRequest = null;
+        if (request == null) return;
+
+        boolean granted = grantResults.length > 0 &&
+                grantResults[0] == PackageManager.PERMISSION_GRANTED;
+        if (granted) {
+            request.grant(new String[]{PermissionRequest.RESOURCE_AUDIO_CAPTURE});
+        } else {
+            request.deny();
+            Toast.makeText(this,
+                    "Microphone stays off. Voice chat is optional.",
+                    Toast.LENGTH_LONG).show();
         }
     }
 
@@ -207,6 +274,13 @@ public class MainActivity extends Activity {
         public String getGameVersion() {
             return updateManager == null ? "Bundled" :
                     updateManager.getGameVersionName();
+        }
+
+        @JavascriptInterface
+        public String getUpdateStatus() {
+            return updateManager == null
+                    ? "{\"checked\":false,\"available\":false}"
+                    : updateManager.getUpdateStatusJson();
         }
 
         @JavascriptInterface
