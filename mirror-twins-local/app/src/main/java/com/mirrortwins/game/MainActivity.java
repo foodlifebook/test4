@@ -3,6 +3,8 @@ package com.mirrortwins.game;
 import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
+import android.content.Intent;
+import android.provider.Settings;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -314,6 +316,23 @@ public class MainActivity extends Activity {
                         new String[]{Manifest.permission.RECORD_AUDIO},
                         AUDIO_PERMISSION_REQUEST
                 );
+            });
+        }
+
+        @JavascriptInterface
+        public void openMicrophoneSettings() {
+            runOnUiThread(() -> {
+                try {
+                    Intent intent = new Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.parse("package:" + getPackageName())
+                    );
+                    startActivity(intent);
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this,
+                            "Open Android Settings → Apps → Mirror Twins → Permissions → Microphone.",
+                            Toast.LENGTH_LONG).show();
+                }
             });
         }
 
