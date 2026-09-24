@@ -342,6 +342,15 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void dispatchAppLifecycleEvent(String eventName) {
+        if (webView == null) return;
+        String safe = eventName == null ? "" : eventName.replace("'", "");
+        webView.evaluateJavascript(
+                "window.dispatchEvent(new Event('" + safe + "'));",
+                null
+        );
+    }
+
     private void showStartupError(Throwable t) {
         TextView error = new TextView(this);
         error.setTextColor(Color.WHITE);
@@ -357,15 +366,38 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         backupStorageNow();
+        // Release WebRTC microphone BEFORE pausing the WebView. External apps/calls always win.
+        dispatchAppLifecycleEvent("mirrorTwinsAppPaused");
         if (webView != null) webView.onPause();
         super.onPause();
     }
 
     @Override
+    protected void onStop() {
+        dispatchAppLifecycleEvent("mirrorTwinsAppStopped");
+        if (webView != null) webView.pauseTimers();
+        super.onStop();
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
-        if (webView != null) webView.onResume();
+        if (webView != null) {
+            webView.resumeTimers();
+            webView.onResume();
+            dispatchAppLifecycleEvent("mirrorTwinsAppResumed");
+        }
         if (updateManager != null) updateManager.resumePendingInstallIfAllowed();
+    }
+
+    @Override
+    protected void onDestroy() {
+        dispatchAppLifecycleEvent("mirrorTwinsAppStopped");
+        if (webView != null) {
+            webView.stopLoading();
+            webView.onPause();
+        }
+        super.onDestroy();
     }
 
     @Override
